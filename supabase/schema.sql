@@ -121,7 +121,14 @@ begin
   if amount <= 0 then raise exception 'Amount must be positive'; end if;
   update public.credits
   set used = used + amount, remaining = remaining - amount, updated_at = now()
-  where user_id = auth.uid() and remaining >= amount
+  where user_id = auth.uid()
+    and remaining >= amount
+    and exists (
+      select 1
+      from public.profiles
+      where id = auth.uid()
+        and (role = 'admin' or access_status = 'approved')
+    )
   returning * into result;
   if result.user_id is null then raise exception 'Not enough credits'; end if;
   return result;
