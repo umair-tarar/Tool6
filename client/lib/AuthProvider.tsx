@@ -20,13 +20,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = async () => {
+    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setProfile(null);
+      setLoading(false);
       return;
     }
     const { data } = await supabase.from("profiles").select("id,email,full_name,role,access_status").eq("id", user.id).single();
     setProfile(data as Profile | null);
+    setLoading(false);
   };
 
   useEffect(() => {

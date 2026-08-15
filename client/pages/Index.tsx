@@ -93,16 +93,18 @@ export default function Index() {
   const { user, profile, loading } = useAuth();
   const result = useMemo(() => inspectEmail(checkedEmail), [checkedEmail]);
 
+  const hasWorkspaceAccess = profile?.role === "admin" || profile?.access_status === "approved";
+
   useEffect(() => {
     if (!loading && !user) navigate("/login", { replace: true });
-    if (!user || profile?.access_status !== "approved") return;
+    if (!user || !hasWorkspaceAccess) return;
     supabase.from("credits").select("remaining").eq("user_id", user.id).single().then(({ data }) => {
       if (data) setCredits(data.remaining);
     });
-  }, [loading, user, profile, navigate]);
+  }, [loading, user, hasWorkspaceAccess, navigate]);
 
   const hasRemainingCredits = async () => {
-    if (!user || profile?.access_status !== "approved") return false;
+    if (!user || !hasWorkspaceAccess) return false;
     const { data } = await supabase
       .from("credits")
       .select("remaining")
@@ -220,12 +222,20 @@ export default function Index() {
   );
   const hasResults = rows.length > 0;
 
-  if (profile && profile.role !== "admin" && profile.access_status !== "approved") {
-    const accessMessage = {
-      pending: "Your account is waiting for admin approval.",
-      rejected: "Your account access request was rejected.",
-      revoked: "Your account access has been revoked. Please contact the administrator.",
-    }[profile.access_status];
+  if (loading) {
+    return <main className="grid min-h-screen place-items-center bg-[#f7f9fc] text-sm text-[#71809d]">Checking access...</main>;
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  if (!profile || !hasWorkspaceAccess) {
+    const accessMessage = profile?.access_status === "rejected"
+      ? "Your account access request was rejected."
+      : profile?.access_status === "revoked"
+        ? "Your account access has been revoked. Please contact the administrator."
+        : "Your account is waiting for admin approval.";
     return <main className="grid min-h-screen place-items-center bg-[#f7f9fc] px-5 text-center text-[#17223b]"><div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm"><ShieldCheck className="mx-auto mb-4 text-[#263bd0]" size={32} /><h1 className="text-xl font-extrabold">Workspace access unavailable</h1><p className="mt-3 text-sm text-[#71809d]">{accessMessage}</p></div></main>;
   }
 
