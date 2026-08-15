@@ -220,7 +220,7 @@ export default function Index() {
   );
   const hasResults = rows.length > 0;
 
-  if (profile && profile.access_status !== "approved") {
+  if (profile && profile.role !== "admin" && profile.access_status !== "approved") {
     const accessMessage = {
       pending: "Your account is waiting for admin approval.",
       rejected: "Your account access request was rejected.",
